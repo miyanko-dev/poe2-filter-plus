@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PoE 2 Trading Plus",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "Fuzzy stat search, advanced item-text copy, stat-filter duplication, and item-text import for the Path of Exile 2 trade site.",
   "icons": {
     "16": "icons/icon-16.png",
