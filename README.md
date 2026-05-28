@@ -11,11 +11,25 @@ Not on the Chrome Web Store yet. To use it now:
 
 ## Features
 
-- **Fuzzy stat search** — start typing in any stat dropdown and your query is treated as fuzzy. Type "fire res" instead of hunting for the exact stat name.
-- **Copy item** — copy any listing as PoB-friendly text. Hover a row, click the notebook icon.
-- **Search by item, with values** — the magnifying-glass button now pre-fills the min values from the item's actual rolls, not just the stat names.
-- **Duplicate filter group** — clone any stat-filter group (Stat Filters, And, Not, If, Count, Weighted Sum) with one click.
-- **Import item** — paste an in-game item copy (`Ctrl+C`) and the extension builds the matching stat filters for you.
+### Fuzzy stat search
+
+Start typing in any stat dropdown and your query is treated as fuzzy. Type "fire res" instead of hunting for the exact stat name.
+
+### Copy item
+
+Hover any row and click the notebook icon to copy the listing as PoB-friendly text.
+
+### Search by item, with values
+
+The magnifying-glass button now pre-fills the min values from the item's actual rolls — not just the stat names.
+
+### Duplicate filter group
+
+Clone any stat-filter group (Stat Filters, And, Not, If, Count, Weighted Sum) with one click.
+
+### Import item
+
+Paste an in-game item copy (`Ctrl+C`) and the extension builds the matching stat filters for you.
 
 ## Credits
 
