@@ -31,6 +31,16 @@ Clone any stat-filter group (Stat Filters, And, Not, If, Count, Weighted Sum) wi
 
 Paste an in-game item copy (`Ctrl+C`) and the extension builds the matching stat filters for you.
 
+## Packaging for the Chrome Web Store
+
+The uploadable package is the **contents** of `extension/` (so `manifest.json` sits at the zip root). Build it with:
+
+```
+cd extension && zip -r ../poe2-trading-plus.zip . -x '*.DS_Store'
+```
+
+Then upload `poe2-trading-plus.zip` in the Chrome Web Store dashboard under **Package → Upload new package**. Bump `version` in `manifest.json` before each release.
+
 ## Credits
 
 Based on a userscript by **miyanko**.
