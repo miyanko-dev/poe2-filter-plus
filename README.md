@@ -1,13 +1,11 @@
 # PoE 2 Trading Plus
 
-A Chrome extension for the [Path of Exile 2 trade site](https://www.pathofexile.com/trade2/search/poe2/).
+A Tampermonkey userscript for the [Path of Exile 2 trade site](https://www.pathofexile.com/trade2/search/poe2/).
 
 ## Install
 
-Not on the Chrome Web Store yet. To use it now:
-
-1. Download or clone this repo.
-2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, choose the `extension/` folder.
+1. Install [Tampermonkey](https://www.tampermonkey.net/) (or another userscript manager).
+2. Open `PoE2-Trading-Plus.user.js`, click **Raw**, and confirm the install — or paste its contents into a new Tampermonkey script.
 
 ## Features
 
@@ -15,31 +13,17 @@ Not on the Chrome Web Store yet. To use it now:
 
 Start typing in any stat dropdown and your query is treated as fuzzy. Type "fire res" instead of hunting for the exact stat name.
 
-### Copy item
-
-Hover any row and click the notebook icon to copy the listing as PoB-friendly text.
-
-### Search by item, with values
-
-The magnifying-glass button now pre-fills the min values from the item's actual rolls — not just the stat names.
-
 ### Duplicate filter group
 
 Clone any stat-filter group (Stat Filters, And, Not, If, Count, Weighted Sum) with one click.
 
-### Import item
+### Merge filter groups
 
-Paste an in-game item copy (`Ctrl+C`) and the extension builds the matching stat filters for you.
+Tick the checkbox at the top-right of two or more stat-filter groups, then click **Merge Filters** (next to Clear). Their filters combine into a single group that keeps the topmost selected group's type.
 
-## Packaging for the Chrome Web Store
+## Privacy
 
-The uploadable package is the **contents** of `extension/` (so `manifest.json` sits at the zip root). Build it with:
-
-```
-cd extension && zip -r ../poe2-trading-plus.zip . -x '*.DS_Store'
-```
-
-Then upload `poe2-trading-plus.zip` in the Chrome Web Store dashboard under **Package → Upload new package**. Bump `version` in `manifest.json` before each release.
+The script collects, transmits, and sells nothing. It runs only on `https://www.pathofexile.com/trade2/search/poe2/*`, has no analytics, makes no third-party requests (icons are inline SVG), and stores nothing in your browser.
 
 ## Credits
 
