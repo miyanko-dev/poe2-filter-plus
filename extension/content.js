@@ -57,7 +57,18 @@
     const VUE_RETRY_DELAY_MS = 200;
     const VUE_MAX_RETRIES = 100;
     const FILTER_DEBOUNCE_MS = 150;
-    const DUPLICATE_REFRESH_DELAY_MS = 300;
+
+    // The page CSP (style-src 'unsafe-inline') forbids cross-origin stylesheets, so the
+    // Material Symbols webfont can't load. Inline the original glyphs as SVG instead:
+    // copy = Lucide "copy"; duplicate = Material Symbols "tab_inactive" (the previous
+    // icon, which matched the site). currentColor lets the existing CSS tint them.
+    const COPY_ICON_SVG =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round">' +
+        '<rect x="9" y="9" width="11" height="11" rx="2"/>' +
+        '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    const DUPLICATE_ICON_SVG =
+        '<svg viewBox="0 -960 960 960" fill="currentColor"><path d="M320-80q-33 0-56.5-23.5T240-160v-80h-80q-33 0-56.5-23.5T80-320v-80h80v80h80v-320q0-33 23.5-56.5T320-720h320v-80h-80v-80h80q33 0 56.5 23.5T720-800v80h80q33 0 56.5 23.5T880-640v480q0 33-23.5 56.5T800-80H320Zm0-80h480v-480H320v480ZM80-480v-160h80v160H80Zm0-240v-80q0-33 23.5-56.5T160-880h80v80h-80v80H80Zm240-80v-80h160v80H320Zm0 640v-480 480Z"/></svg>';
 
     function logError(area, message, error) {
         console.error(`[PoE2 Suite - ${area}]`, message, error ?? '');
@@ -104,13 +115,29 @@
         }
     }
 
+    // Add an "And" stat group from [{ id, value }] entries. The store's setStatFilter
+    // mutation, called WITHOUT an index, does `stats[group].filters.push(value)` — the
+    // exact path Import's working mode uses, which binds the value inputs. (Passing the
+    // filters inline to pushStatGroup stores them but the form doesn't bind their values
+    // reliably.) So: push an empty group — `filters: []` creates zero rows — then append
+    // each filter via no-index setStatFilter.
+    function addAndStatGroup(entries) {
+        if (entries.length === 0) return 0;
+        const groupIndex = window.app?.$store?.state?.persistent?.stats?.length ?? 0;
+        if (!commitStore('pushStatGroup', { type: 'and', filters: [] })) return 0;
+
+        let added = 0;
+        for (const entry of entries) {
+            if (commitStore('setStatFilter', {
+                group: groupIndex,
+                value: { id: entry.id, value: entry.value },
+            })) added++;
+        }
+        return added;
+    }
+
     function injectStyles() {
         if (document.getElementById('poe2-suite-styles')) return;
-
-        const font = document.createElement('link');
-        font.rel = 'stylesheet';
-        font.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add_notes,tab_inactive';
-        document.head.appendChild(font);
 
         const toastBg = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADsSURBVEhLY2AYBfQMgf///3P8+/evAIgvA/FsIF+BavYDDWMBGroaSMMBiE8VC7AZDrIFaMFnii3AZTjUgsUUWUDA8OdAH6iQbQEhw4HyGsPEcKBXBIC4ARhex4G4BsjmweU1soIFaGg/WtoFZRIZdEvIMhxkCCjXIVsATV6gFGACs4Rsw0EGgIIH3QJYJgHSARQZDrWAB+jawzgs+Q2UO49D7jnRSRGoEFRILcdmEMWGI0cm0JJ2QpYA1RDvcmzJEWhABhD/pqrL0S0CWuABKgnRki9lLseS7g2AlqwHWQSKH4oKLrILpRGhEQCw2LiRUIa4lwAAAABJRU5ErkJggg==)';
 
@@ -129,11 +156,15 @@
             }
             div.row:hover .poe2-copy-btn { opacity: 1 !important; }
             .poe2-copy-icon {
-                font-family: 'Material Symbols Outlined' !important;
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
-                font-size: 24px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 color: #fff !important;
-                -webkit-font-smoothing: antialiased !important;
+            }
+            .poe2-copy-icon svg {
+                width: 20px !important;
+                height: 20px !important;
+                display: block !important;
             }
             .poe2-duplicate-btn {
                 display: inline-block !important;
@@ -146,18 +177,18 @@
                 display: none !important;
             }
             .poe2-duplicate-icon {
-                font-family: 'Material Symbols Outlined' !important;
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20 !important;
-                font-size: 18px !important;
                 width: 18px !important;
                 height: 18px !important;
-                line-height: 18px !important;
                 color: #fff !important;
                 position: absolute !important;
                 top: 50% !important;
                 left: 50% !important;
                 transform: translate(-50%, -50%) !important;
-                -webkit-font-smoothing: antialiased !important;
+            }
+            .poe2-duplicate-icon svg {
+                width: 18px !important;
+                height: 18px !important;
+                display: block !important;
             }
             .poe2-toast {
                 position: fixed;
@@ -475,24 +506,34 @@
             return;
         }
 
-        const filters = [];
+        const entries = [];
         for (let i = 0; i < hashes.length; i++) {
             const id = hashes[i]?.[0];
             if (!id) continue;
-            // Match the payload shape Vuex's pushStatGroup mutation expects (same as
-            // the Import feature uses): always include `value: { min }`, even null.
-            const min = extractMinFromMod(displayMods[i] || '');
-            filters.push({ id, value: { min }, disabled: false });
+            entries.push({ id, value: { min: extractMinFromMod(displayMods[i] || '') } });
         }
 
-        if (filters.length === 0) {
+        if (entries.length === 0) {
             showToast('No stat filters extracted.');
             return;
         }
 
-        if (commitStore('pushStatGroup', { type: 'and', filters })) {
-            showToast(`Added ${filters.length} stat filter${filters.length === 1 ? '' : 's'} with min values.`);
+        const added = addAndStatGroup(entries);
+
+        // TEMP diagnostic — reveals whether values reach the store (binding issue) or not
+        // (extraction issue). Remove once value population is confirmed working.
+        try {
+            const allStats = window.app?.$store?.state?.persistent?.stats;
+            console.log('[PoE2 Suite - SearchSimilar] DIAG',
+                '\n  hashes[0..2] =', JSON.stringify(hashes.slice(0, 3)),
+                '\n  mods[0..2]   =', JSON.stringify(displayMods.slice(0, 3)),
+                '\n  entries      =', JSON.stringify(entries),
+                '\n  storedGroup  =', JSON.stringify(allStats?.[allStats.length - 1]));
+        } catch (err) {
+            console.log('[PoE2 Suite - SearchSimilar] DIAG error', err);
         }
+
+        if (added) showToast(`Added ${added} stat filter${added === 1 ? '' : 's'} with min values.`);
     }
 
     function extractMinFromMod(text) {
@@ -518,12 +559,13 @@
 
     function installCopyButton(row) {
         if (processedRows.has(row)) return;
+        if (row.querySelector('.poe2-copy-btn')) return;
 
-        const leftDiv = row.querySelector('div.left');
-        if (!leftDiv || leftDiv.children.length < 2) return;
-
-        const slot = leftDiv.children[1];
-        if (slot.classList.contains('poe2-copy-btn')) return;
+        // Anchor next to the native "search similar" button (the magnifier in the item
+        // card's bottom-left controls) rather than a fixed div.left child slot, which no
+        // longer holds on the current trade form. The searchBy button is always present.
+        const searchBtn = row.querySelector('button.searchBy');
+        if (!searchBtn || !searchBtn.parentNode) return;
 
         const button = document.createElement('button');
         button.className = 'poe2-copy-btn copy';
@@ -531,11 +573,11 @@
 
         const icon = document.createElement('span');
         icon.className = 'poe2-copy-icon';
-        icon.textContent = 'add_notes';
+        icon.innerHTML = COPY_ICON_SVG;
         button.appendChild(icon);
 
         button.addEventListener('click', () => copyRowToClipboard(row));
-        slot.replaceWith(button);
+        searchBtn.parentNode.insertBefore(button, searchBtn);
         processedRows.add(row);
     }
 
@@ -911,7 +953,7 @@
 
         const icon = document.createElement('span');
         icon.className = 'poe2-duplicate-icon';
-        icon.textContent = 'tab_inactive';
+        icon.innerHTML = DUPLICATE_ICON_SVG;
         button.appendChild(icon);
 
         button.addEventListener('click', (event) => {
@@ -945,7 +987,10 @@
             if (!clone.filters) clone.filters = [];
 
             commitStore('pushStatGroup', clone);
-            setTimeout(refreshDuplicateButtons, DUPLICATE_REFRESH_DELAY_MS);
+            // Install the new group's duplicate icon on the next Vue tick — right after
+            // the DOM updates — instead of after a fixed delay, so it appears instantly.
+            if (window.app?.$nextTick) window.app.$nextTick(refreshDuplicateButtons);
+            else refreshDuplicateButtons();
         } catch (error) {
             logError('Duplicator', 'Failed to duplicate group', error);
         }
@@ -1109,9 +1154,17 @@
             }
 
             try {
-                const count = importItemText(text, deviation, clearFirst);
+                const { committed, skipped } = importItemText(text, deviation, clearFirst);
                 close();
-                showToast(`Imported ${count} stat filter${count === 1 ? '' : 's'} successfully.`);
+                if (committed === 0) {
+                    showToast(skipped > 0
+                        ? `No stats matched (${skipped} unrecognized) — see console.`
+                        : 'No stat filters found to import.');
+                } else if (skipped > 0) {
+                    showToast(`Imported ${committed} stat${committed === 1 ? '' : 's'}; ${skipped} unrecognized — see console.`);
+                } else {
+                    showToast(`Imported ${committed} stat filter${committed === 1 ? '' : 's'} successfully.`);
+                }
             } catch (error) {
                 logError('Import', 'Failed to import item', error);
                 showToast(error.message || 'Error parsing item.');
@@ -1165,25 +1218,25 @@
             return null;
         };
 
+        let committed = 0;
         if (clearFirst) {
             commitStore('clearSearchForm');
             finalStats.forEach((stat) => {
                 const resolved = resolveOrFlip(stat.humanText, stat.min);
                 if (!resolved) { unresolved.push(stat.humanText); return; }
-                commitStore('setStatFilter', {
+                if (commitStore('setStatFilter', {
                     group: 0,
                     value: { id: resolved.id, value: resolved.value },
-                });
+                })) committed++;
             });
         } else {
-            const filters = finalStats
-                .map((stat) => {
-                    const resolved = resolveOrFlip(stat.humanText, stat.min);
-                    if (!resolved) { unresolved.push(stat.humanText); return null; }
-                    return { id: resolved.id, value: resolved.value, disabled: false };
-                })
-                .filter(Boolean);
-            if (filters.length > 0) commitStore('pushStatGroup', { type: 'and', filters });
+            const entries = [];
+            finalStats.forEach((stat) => {
+                const resolved = resolveOrFlip(stat.humanText, stat.min);
+                if (resolved) entries.push(resolved);
+                else unresolved.push(stat.humanText);
+            });
+            committed = addAndStatGroup(entries);
         }
 
         if (unresolved.length) {
@@ -1211,7 +1264,7 @@
             });
         }
 
-        return parsed.length;
+        return { committed, skipped: unresolved.length };
     }
 
     function parseItemClass(headerLine) {
