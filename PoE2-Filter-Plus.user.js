@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         PoE 2 Trading Plus
+// @name         PoE 2 Filter Plus
 // @namespace    https://github.com/miyanko/PoE2-Trading-Plus
-// @version      2.0.1
+// @version      2.1.0
 // @description  Fuzzy stat search, duplicate stat-filter groups, and select multiple groups to merge into one. Verified for PoE 2 Patch 0.5.0.
 // @author       miyanko
 // @match        https://www.pathofexile.com/trade2/search/poe2/*
@@ -18,13 +18,13 @@
     const VUE_MAX_RETRIES = 100;
     const REFRESH_DEBOUNCE_MS = 150;
 
-    // CSP (style-src 'unsafe-inline') blocks the Material Symbols webfont, so inline the
-    // duplicate glyph ("tab_inactive") as SVG; currentColor lets the CSS tint it.
+    // Duplicate glyph: outlined square behind, filled square in front. Inlined as SVG
+    // because the site CSP blocks external assets; currentColor lets the CSS tint it.
     const DUPLICATE_ICON_SVG =
-        '<svg viewBox="0 -960 960 960" fill="currentColor"><path d="M320-80q-33 0-56.5-23.5T240-160v-80h-80q-33 0-56.5-23.5T80-320v-80h80v80h80v-320q0-33 23.5-56.5T320-720h320v-80h-80v-80h80q33 0 56.5 23.5T720-800v80h80q33 0 56.5 23.5T880-640v480q0 33-23.5 56.5T800-80H320Zm0-80h480v-480H320v480ZM80-480v-160h80v160H80Zm0-240v-80q0-33 23.5-56.5T160-880h80v80h-80v80H80Zm240-80v-80h160v80H320Zm0 640v-480 480Z"/></svg>';
+        '<svg viewBox="0 0 18 18"><rect x="6.75" y="1.75" width="9.5" height="9.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="6" width="11" height="11" fill="currentColor"/></svg>';
 
     function logError(area, message, error) {
-        console.error(`[PoE2 Suite - ${area}]`, message, error ?? '');
+        console.error(`[PoE 2 Filter Plus][${area}]`, message, error ?? '');
     }
 
     function debounce(fn, wait) {
@@ -55,6 +55,11 @@
 
     const statsState = () => window.app?.$store?.state?.persistent?.stats;
 
+    // Merge selection lives here, keyed by the store's stat-group objects: the site
+    // re-renders group headers on query changes, which silently replaces our
+    // checkboxes with fresh unchecked ones — DOM state alone doesn't survive.
+    const selectedMergeGroups = new Set();
+
     function commitStore(type, payload) {
         const store = window.app?.$store;
         if (!store) {
@@ -78,12 +83,12 @@
     }
 
     function injectStyles() {
-        if (document.getElementById('poe2-suite-styles')) return;
+        if (document.getElementById('poe2-filter-plus-styles')) return;
 
         const toastBg = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADsSURBVEhLY2AYBfQMgf///3P8+/evAIgvA/FsIF+BavYDDWMBGroaSMMBiE8VC7AZDrIFaMFnii3AZTjUgsUUWUDA8OdAH6iQbQEhw4HyGsPEcKBXBIC4ARhex4G4BsjmweU1soIFaGg/WtoFZRIZdEvIMhxkCCjXIVsATV6gFGACs4Rsw0EGgIIH3QJYJgHSARQZDrWAB+jawzgs+Q2UO49D7jnRSRGoEFRILcdmEMWGI0cm0JJ2QpYA1RDvcmzJEWhABhD/pqrL0S0CWuABKgnRki9lLseS7g2AlqwHWQSKH4oKLrILpRGhEQCw2LiRUIa4lwAAAABJRU5ErkJggg==)';
 
         const style = document.createElement('style');
-        style.id = 'poe2-suite-styles';
+        style.id = 'poe2-filter-plus-styles';
         style.textContent = `
             .poe2-duplicate-btn {
                 display: inline-block !important;
@@ -96,8 +101,8 @@
                 display: none !important;
             }
             .poe2-duplicate-icon {
-                width: 18px !important;
-                height: 18px !important;
+                width: 16px !important;
+                height: 16px !important;
                 color: #fff !important;
                 position: absolute !important;
                 top: 50% !important;
@@ -105,17 +110,23 @@
                 transform: translate(-50%, -50%) !important;
             }
             .poe2-duplicate-icon svg {
-                width: 18px !important;
-                height: 18px !important;
+                width: 16px !important;
+                height: 16px !important;
                 display: block !important;
             }
             .poe2-merge-checkbox {
+                -webkit-appearance: none !important;
+                appearance: none !important;
                 width: 16px !important;
                 height: 16px !important;
-                margin: 0 6px 0 0 !important;
+                margin: 0 0 0 6px !important;
                 vertical-align: middle !important;
-                accent-color: #8ab4f8 !important;
                 cursor: pointer !important;
+                border: 0 !important;
+                background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='0.75' y='0.75' width='10.5' height='10.5' rx='1.5' fill='none' stroke='%23585858' stroke-width='1.5'/%3E%3C/svg%3E") center / 12px 12px no-repeat !important;
+            }
+            .poe2-merge-checkbox:checked {
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect width='12' height='12' rx='1.5' fill='%23fff'/%3E%3C/svg%3E") !important;
             }
             .poe2-toast {
                 position: fixed;
@@ -167,6 +178,38 @@
         document.head.appendChild(style);
     }
 
+    let spriteStyle = null;
+
+    // The site draws its toggle squares from a signed sprite URL that rotates,
+    // so steal it from a live .toggle-btn instead of hardcoding it. Falls back
+    // to the injected SVG squares until a toggle button exists.
+    function adoptNativeCheckboxSprite() {
+        if (spriteStyle) return;
+
+        const toggle = document.querySelector('.toggle-btn');
+        if (!toggle) return;
+
+        const sprite = getComputedStyle(toggle, '::after').backgroundImage;
+        if (!sprite || sprite === 'none') return;
+
+        spriteStyle = document.createElement('style');
+        spriteStyle.textContent = `
+            .poe2-merge-checkbox {
+                width: 15px !important;
+                height: 15px !important;
+                background-image: ${sprite} !important;
+                background-repeat: no-repeat !important;
+                background-size: auto !important;
+                background-position: -217px -230px !important;
+            }
+            .poe2-merge-checkbox:checked {
+                background-image: ${sprite} !important;
+                background-position: -247px -230px !important;
+            }
+        `;
+        document.head.appendChild(spriteStyle);
+    }
+
     let toastTimer = null;
 
     function showToast(message) {
@@ -208,14 +251,18 @@
 
     // Stat-filter groups, in DOM order — which mirrors persistent.stats, so a group's
     // position in this list is its store index. Non-stat filter groups (Type, Equipment,
-    // ...) are excluded so that index alignment holds.
+    // ...) are excluded so that index alignment holds. Collapsed groups must be included
+    // too, both to keep the indexes aligned and so their checked merge boxes count.
     function findStatGroups() {
         const groups = [];
-        document.querySelectorAll('.filter-group.expanded').forEach((element) => {
-            const editButton = element.querySelector('.edit-btn:not(.poe2-duplicate-btn)');
+        document.querySelectorAll('.filter-group').forEach((element) => {
             const titleEl = element.querySelector('.filter-title-clickable, .filter-title');
-            if (!editButton || !titleEl) return;
+            if (!titleEl) return;
             if (!isStatGroup(groupTitle(titleEl))) return;
+
+            // Collapsed groups may not render an edit button; they still occupy
+            // a store index, so keep them in the list either way.
+            const editButton = element.querySelector('.edit-btn:not(.poe2-duplicate-btn)');
             groups.push({ element, editButton });
         });
         return groups;
@@ -271,13 +318,23 @@
     }
 
     function refreshGroupControls() {
-        findStatGroups().forEach((group) => {
+        const stats = statsState();
+        findStatGroups().forEach((group, index) => {
             installDuplicateButton(group);
             installMergeCheckbox(group);
+            syncMergeCheckbox(group, Array.isArray(stats) ? stats[index] : null);
         });
     }
 
+    // Reapply the script-held selection after every (re)install pass, so a checkbox
+    // recreated by a site re-render comes back in its previous state.
+    function syncMergeCheckbox(group, groupState) {
+        const checkbox = group.element.querySelector('.poe2-merge-checkbox');
+        if (checkbox) checkbox.checked = !!groupState && selectedMergeGroups.has(groupState);
+    }
+
     function installDuplicateButton(group) {
+        if (!group.editButton) return;
         if (group.element.querySelector('.poe2-duplicate-btn')) return;
 
         const button = document.createElement('button');
@@ -303,7 +360,10 @@
     }
 
     function installMergeCheckbox(group) {
+        if (!group.editButton) return;
         if (group.element.querySelector('.poe2-merge-checkbox')) return;
+
+        adoptNativeCheckboxSprite();
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
@@ -313,9 +373,25 @@
         // Keep the click from reaching the header's expand/collapse handler.
         checkbox.addEventListener('click', (event) => event.stopPropagation());
 
-        // Sit at the start of the group's right-hand control cluster (top-right corner).
-        const container = group.editButton.parentNode;
-        container.insertBefore(checkbox, container.firstChild);
+        // Record the selection against the store object, resolved live at click time:
+        // the captured group reference may already be orphaned by a re-render.
+        checkbox.addEventListener('change', () => {
+            const element = checkbox.closest('.filter-group');
+            const index = findStatGroups().findIndex((entry) => entry.element === element);
+            const stats = statsState();
+            const groupState = (index >= 0 && Array.isArray(stats)) ? stats[index] : null;
+
+            if (!groupState) {
+                logError('Merge', `cannot map checkbox to store group (index ${index})`);
+                checkbox.checked = false;
+                return;
+            }
+            if (checkbox.checked) selectedMergeGroups.add(groupState);
+            else selectedMergeGroups.delete(groupState);
+        });
+
+        // Sit at the end of the group's control cluster: edit, duplicate, then checkbox.
+        group.editButton.parentNode.appendChild(checkbox);
     }
 
     function placeMergeButton() {
@@ -339,14 +415,14 @@
     function duplicateStatGroup(element) {
         const stats = statsState();
         if (!Array.isArray(stats) || !element) {
-            logError('Duplicator', 'stats state or group element unavailable');
+            logError('Duplicate', 'stats state or group element unavailable');
             showToast('Duplicate failed — see console.');
             return;
         }
 
         const index = findStatGroups().findIndex((group) => group.element === element);
         if (index < 0 || index >= stats.length) {
-            logError('Duplicator', `group index out of range (${index} / ${stats.length})`);
+            logError('Duplicate', `group index out of range (${index} / ${stats.length})`);
             showToast('Duplicate failed — see console.');
             return;
         }
@@ -355,7 +431,7 @@
         try {
             clone = JSON.parse(JSON.stringify(stats[index]));
         } catch (error) {
-            logError('Duplicator', 'failed to clone group', error);
+            logError('Duplicate', 'failed to clone group', error);
             showToast('Duplicate failed — see console.');
             return;
         }
@@ -373,12 +449,12 @@
             return;
         }
 
-        // findStatGroups() is in store order and forEach walks it ascending, so `selected`
-        // is sorted and selected[0] is the topmost group.
+        // Selection is read from the script-held set, not the DOM, so it is immune to
+        // the site re-rendering checkboxes. Walking stats ascending keeps `selected`
+        // sorted, so selected[0] is the topmost group.
         const selected = [];
-        findStatGroups().forEach((group, index) => {
-            if (index >= stats.length) return;
-            if (group.element.querySelector('.poe2-merge-checkbox')?.checked) selected.push(index);
+        stats.forEach((groupState, index) => {
+            if (selectedMergeGroups.has(groupState)) selected.push(index);
         });
 
         if (selected.length < 2) {
@@ -401,6 +477,7 @@
             // The topmost group keeps its type and absorbs every filter. Reassigning a
             // reactive property and splicing a reactive array are both tracked by Vue 2, so
             // the form re-renders without a dedicated store mutation.
+            selected.forEach((index) => selectedMergeGroups.delete(stats[index]));
             stats[topIndex].filters = merged;
             absorbed.sort((a, b) => b - a).forEach((index) => stats.splice(index, 1));
 
