@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         PoE 2 Filter Plus
 // @namespace    https://github.com/miyanko-dev/PoE2-Filter-Plus
-// @version      2.1.0
+// @version      1.0.0
 // @description  Fuzzy stat search, duplicate stat-filter groups, and select multiple groups to merge into one. Verified for PoE 2 Patch 0.5.0.
 // @author       miyanko
 // @match        https://www.pathofexile.com/trade2/search/poe2/*
+// @icon         https://www.poe2wiki.net/images/5/58/Divine_Orb_inventory_icon.png
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==
