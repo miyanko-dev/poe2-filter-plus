@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         PoE 2 Filter Plus
-// @namespace    https://github.com/miyanko/PoE2-Trading-Plus
+// @namespace    https://github.com/miyanko-dev/PoE2-Filter-Plus
 // @version      2.1.0
 // @description  Fuzzy stat search, duplicate stat-filter groups, and select multiple groups to merge into one. Verified for PoE 2 Patch 0.5.0.
 // @author       miyanko
