@@ -1,29 +1,22 @@
-# PoE 2 Filter Plus
+# poe2-filter-plus
 
-A Tampermonkey userscript for the [Path of Exile 2 trade site](https://www.pathofexile.com/trade2/search/poe2/).
-
-## Install
-
-1. Install [Tampermonkey](https://www.tampermonkey.net/) (or another userscript manager).
-2. Open `PoE2-Filter-Plus.user.js`, click **Raw**, and confirm the install — or paste its contents into a new Tampermonkey script.
+A userscript adding quality-of-life search tools to the [Path of Exile 2 trade site](https://www.pathofexile.com/trade2/search/poe2/).
 
 ## Features
 
-### Fuzzy stat search
+- **Fuzzy stat search** — start typing in any stat dropdown and your query is matched loosely. Type "fire res" instead of hunting for the exact stat name.
+- **Duplicate filter group** — clone any stat-filter group (Stat Filters, And, Not, If, Count, Weighted Sum) with one click.
+- **Merge filter groups** — tick the checkbox on two or more groups, then click **Merge Filters** next to Clear. Their filters combine into one group, keeping the topmost selected group's type.
 
-Start typing in any stat dropdown and your query is treated as fuzzy. Type "fire res" instead of hunting for the exact stat name.
+## Installation
 
-### Duplicate filter group
+1. Install [Tampermonkey](https://www.tampermonkey.net/) or another userscript manager.
+2. Open [`PoE2-Filter-Plus.user.js`](PoE2-Filter-Plus.user.js), click **Raw**, and confirm the install.
+3. Reload the trade site.
 
-Clone any stat-filter group (Stat Filters, And, Not, If, Count, Weighted Sum) with one click.
+## Restrictions
 
-### Merge filter groups
-
-Tick the checkbox at the top-right of two or more stat-filter groups, then click **Merge Filters** (next to Clear). Their filters combine into a single group that keeps the topmost selected group's type.
-
-## Privacy
-
-The script collects, transmits, and sells nothing. It runs only on `https://www.pathofexile.com/trade2/search/poe2/*`, has no analytics, makes no third-party requests (icons are inline SVG), and stores nothing in your browser.
+Runs only on `https://www.pathofexile.com/trade2/search/poe2/*`. It collects and transmits nothing: no analytics, no third-party requests (icons are inline SVG), nothing stored in your browser.
 
 ## Credits
 
